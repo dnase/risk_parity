@@ -1,4 +1,5 @@
 import pandas as pd
+import yfinance as yf
 import pandas_datareader.data as web
 import numpy as np
 import datetime
@@ -48,15 +49,14 @@ def _get_risk_parity_weights(covariances, assets_risk_budget, initial_weights):
     return weights
 
 
-def get_weights(yahoo_tickers=['SPY', 'TLT'],
-                start_date=datetime.datetime(2016, 10, 31),
-                end_date=datetime.datetime(2017, 10, 31)):
-    prices = pd.DataFrame([web.DataReader(t,
-                                          'yahoo',
-                                          start_date,
-                                          end_date).loc[:, 'Adj Close']
-                           for t in yahoo_tickers],
-                          index=yahoo_tickers).T.asfreq('B').ffill()
+def get_weights(yahoo_tickers=['SPY', 'TLT']):
+    tickers = yahoo_tickers
+    _start_date = datetime.datetime.now() - datetime.timedelta(days=180)
+    _end_date = datetime.datetime.now()
+    start_date = _start_date.strftime("%Y-%m-%d")
+    end_date = _end_date.strftime("%Y-%m-%d")
+    data = yf.download(tickers, start=start_date, end=end_date)
+    prices = pd.DataFrame(data["Adj Close"])
     covariances = 52.0 * \
         prices.asfreq('W-FRI').pct_change().iloc[1:, :].cov().values
     assets_risk_budget = [1 / prices.shape[1]] * prices.shape[1]
@@ -73,7 +73,7 @@ if __name__ == '__main__':
         print("Must specify list of tickers as comma-separated string e.g. SPY,TLT,BTC-USD")
     sd = datetime.datetime.now() - datetime.timedelta(days=30)
     ed = datetime.datetime.now()
-    weights = get_weights(yahoo_tickers=t, start_date=sd, end_date=ed)
+    weights = get_weights(yahoo_tickers=t)
     sorted_weights = sorted(weights.items(), key=lambda x: x[1], reverse=True)
     for i in sorted_weights:
-        print("\"{name}\": {val},".format(name=i[0], val=i[1]))
+        print("\"{name}\": {val:.2f},".format(name=i[0], val=i[1]))

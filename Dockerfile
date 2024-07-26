@@ -1,6 +1,6 @@
 FROM python:3.6
 
-RUN pip install scipy pandas pandas-datareader
+RUN pip install scipy pandas pandas-datareader yfinance
 RUN mkdir /app
 COPY app/* /app/
 RUN chmod +x /app/docker-entrypoint.sh
